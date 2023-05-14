@@ -1,0 +1,11 @@
+refs/diarization/
+refs/diarization_other/
+refs/data/
+refs/asr/audio_to_release/
+refs/asr/ffmpeg_log/
+refs/asr/new_audio/
+refs/asr/sound.zip
+refs/mlspace__private_key (8).txt
+*.pyc
+
+refs/nisqa/
