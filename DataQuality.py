@@ -115,7 +115,7 @@ class Evaluator():
             stat_by_lang[lang] = scipy.stats.pearsonr(data_by_lang[lang]["mos"], data_by_lang[lang]["eval"])
             stat_by_lang[lang] = (stat_by_lang[lang][0], stat_by_lang[lang][1], len(data_by_lang[lang]["mos"]))
         return stat_by_lang
-    
+
     @classmethod
     def hist_by_model(cls, model_name):
         models_path = Path('models/')
@@ -193,10 +193,7 @@ class Evaluator():
     #def present_analysis(cls, track_paths, texts, predicted_texts, track_analysis???)
 
 evaluated_file = Path('refs/asr/evaluated.csv')
-
-Evaluator.hist_by_model('wav2vec2-xlsr-multilingual-56')
-
-"""model_name = 'wav2vec2-base'
+model_name = 'wav2vec2-large-TIMIT-IPA'
 
 models_dir = Path('models/')
 model_dir = models_dir.joinpath(model_name)
@@ -208,6 +205,8 @@ if not model_dir.joinpath('evaluated.csv').is_file():
     os.rename(evaluated_file, model_dir.joinpath('evaluated.csv'))
 evaluated_file = model_dir.joinpath('evaluated.csv')
 
+Evaluator.hist_by_model(model_name)
+
 Evaluator.eval_quality_from_csv(
     csv_file=str(evaluated_file),
     path_col='new_path',
@@ -217,8 +216,8 @@ pprint(
     Evaluator.plot_by_lang(
         model_dir.joinpath('out.csv'),
         img_dir=img_dir,
-        title=f'facebook/{model_name} model'
+        title=f'speech31/{model_name} model'
     )
-) """
+)
 
 #pprint(evltr.eval_quality("refs/asr/new_audio/0.wav"))

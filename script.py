@@ -47,6 +47,13 @@ def get_length_distr(fname):
     plt.ylim((-1, 30000))
     plt.show()
 
+def get_expected_n_variance(csv, col_name, lang_filter=None, lang_col='lang'):
+    df = pd.read_csv(csv)
+    if lang_filter:
+        df = df[df[lang_col] == lang_filter]
+    data = df[col_name].to_numpy()
+
+    return data.mean(), data.std(), len(data)
 dirs = [
     'refs/asr/audio_to_release/ckt',
     'refs/asr/audio_to_release/evn',
@@ -56,4 +63,8 @@ dirs = [
 ]
 asr_data_csv = 'refs/asr/asr_data.csv'
 
-get_length_distr(asr_data_csv)
+pprint(get_expected_n_variance(
+    'models/wav2vec2-xlsr-multilingual-56/out.csv',
+    'mos_pred',
+    lang_filter='ckt'
+))
