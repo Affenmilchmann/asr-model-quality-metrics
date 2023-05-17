@@ -77,6 +77,7 @@ class Evaluator():
 
         df.reset_index()
         if save_to:
+            print(f"saving to {save_to}")
             df.to_csv(save_to, index=False)
 
         return df['mos_pred']
@@ -175,11 +176,31 @@ class Evaluator():
     
     #@classmethod
     #def present_analysis(cls, track_paths, texts, predicted_texts, track_analysis???)
-""" Evaluator.eval_quality_from_csv(
-    csv_file='refs/asr/evaluated.csv',
+
+evaluated_file = Path('refs/asr/evaluated.csv')
+
+model_name = 'wav2vec2-base'
+models_dir = Path('models/')
+model_dir = models_dir.joinpath(model_name)
+if not (model_dir.is_dir()): model_dir.mkdir()
+img_dir = model_dir.joinpath('img')
+if not (img_dir.is_dir()): img_dir.mkdir()
+
+if not model_dir.joinpath('evaluated.csv').is_file():
+    os.rename(evaluated_file, model_dir.joinpath('evaluated.csv'))
+evaluated_file = model_dir.joinpath('evaluated.csv')
+
+Evaluator.eval_quality_from_csv(
+    csv_file=str(evaluated_file),
     path_col='new_path',
-    save_to='out.csv'
-) """
-pprint(Evaluator.plot_by_lang('out.csv', img_dir='img', title='facebook/wav2vec2-base-960h model'))
+    save_to=model_dir.joinpath('out.csv')
+)
+pprint(
+    Evaluator.plot_by_lang(
+        model_dir.joinpath('out.csv'),
+        img_dir=img_dir,
+        title=f'facebook/{model_name} model'
+    )
+)
 
 #pprint(evltr.eval_quality("refs/asr/new_audio/0.wav"))

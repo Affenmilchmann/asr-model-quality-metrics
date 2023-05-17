@@ -1,6 +1,7 @@
 import subprocess
 import os 
 import pandas as pd
+from matplotlib import pyplot as plt
 from pathlib import Path
 from tqdm import tqdm
 from pprint import pprint
@@ -37,6 +38,15 @@ def get_csv_total_by_lang(csv_path):
         result[l] = total
     return result
 
+def get_length_distr(fname):
+    df = pd.read_csv(fname)
+    df_begin = df["start"].to_list()
+    df_end = df["end"].to_list()
+    lengths = [ end - beg for beg, end in zip(df_begin, df_end) ]
+    plt.hist(lengths)
+    plt.ylim((-1, 30000))
+    plt.show()
+
 dirs = [
     'refs/asr/audio_to_release/ckt',
     'refs/asr/audio_to_release/evn',
@@ -44,4 +54,6 @@ dirs = [
     'refs/asr/audio_to_release/sah',
     'refs/asr/audio_to_release/yrk'
 ]
-pprint(get_csv_total_by_lang('refs/asr/asr_data.csv'))
+asr_data_csv = 'refs/asr/asr_data.csv'
+
+get_length_distr(asr_data_csv)
