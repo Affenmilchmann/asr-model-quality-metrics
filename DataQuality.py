@@ -117,6 +117,21 @@ class Evaluator():
         return stat_by_lang
     
     @classmethod
+    def hist_by_model(cls, model_name):
+        models_path = Path('models/')
+        model_dir = models_path.joinpath(model_name)
+        evaluated_csv = model_dir.joinpath('evaluated.csv')
+        
+        df = pd.read_csv(evaluated_csv)
+        phon_ev = df['phonetic_ev'].to_numpy()
+        plt.hist(phon_ev, bins=50)
+        plt.title(f"{model_name} model")
+        plt.xlabel("PhoneticEditDistance")
+        plt.ylabel("n")
+        plt.savefig(model_dir.joinpath('img/hist.png'))
+        plt.close()
+
+    @classmethod
     def plot_by_lang(cls, csv_file, lang_col="lang", mos_col="mos_pred", eval_col="phonetic_ev", img_dir="", title=None):
         color_wheel = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
         data_by_lang = cls.load_by_lang(
@@ -179,7 +194,10 @@ class Evaluator():
 
 evaluated_file = Path('refs/asr/evaluated.csv')
 
-model_name = 'wav2vec2-base'
+Evaluator.hist_by_model('wav2vec2-xlsr-multilingual-56')
+
+"""model_name = 'wav2vec2-base'
+
 models_dir = Path('models/')
 model_dir = models_dir.joinpath(model_name)
 if not (model_dir.is_dir()): model_dir.mkdir()
@@ -201,6 +219,6 @@ pprint(
         img_dir=img_dir,
         title=f'facebook/{model_name} model'
     )
-)
+) """
 
 #pprint(evltr.eval_quality("refs/asr/new_audio/0.wav"))
