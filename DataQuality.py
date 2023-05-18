@@ -128,6 +128,7 @@ class Evaluator():
         plt.title(f"{model_name} model")
         plt.xlabel("PhoneticEditDistance")
         plt.ylabel("n")
+        plt.tight_layout()
         plt.savefig(model_dir.joinpath('img/hist.png'))
         plt.close()
 
@@ -161,6 +162,7 @@ class Evaluator():
             stat_by_lang['all_langs'][1]
         )
         ax_all.text(0.05, 0.3, text, bbox={"facecolor":"orange", "alpha":0.5, "pad":5})
+        plt.tight_layout()
         ax_all.figure.savefig(Path(img_dir).joinpath('all_langs.png'))
         ax_all.clear()
 
@@ -180,6 +182,7 @@ class Evaluator():
             ax.text(0.05, 0.3, text, bbox={"facecolor":"orange", "alpha":0.5, "pad":5})
             ax.set_xlim((0., 1.1))
             ax.set_ylim((0., 5.))
+            plt.tight_layout()
             ax.figure.savefig(Path(img_dir).joinpath(f'{lang}.png'))
             ax.clear()
 
@@ -193,8 +196,26 @@ class Evaluator():
             plt.title(title.format(lang=lang))
             plt.xlabel("Predicted MOS")
             plt.ylabel("n")
+            plt.tight_layout()
             plt.savefig(img_dir.joinpath(f'{lang}_hist.png'))
             plt.close()
+
+    @classmethod
+    def combined_mos_hist_by_lang(cls, csv_file, lang_col="lang", mos_col="mos_pred", img_dir="", title="{lang}", bins_count=50):
+        data = cls.load_by_lang(csv_file, lang_col, mos_col)
+        img_dir = Path(img_dir)
+        
+        # assuming we have 3 languages and 1 'all_langs' so 4 in total
+        fig, axes = plt.subplots(2, 2)
+
+        for i, lang in enumerate(data.keys()):
+            axes[i % 2, i // 2].hist(data[lang]['mos'], bins=bins_count)
+            axes[i % 2, i // 2].set_title(title.format(lang=lang))
+            axes[i % 2, i // 2].set_xlim((0, 5))
+        fig.suptitle("MOS distribution by lang")
+        plt.tight_layout()
+
+        plt.savefig(img_dir.joinpath(f'combined_hist.png'))
 
     @classmethod
     def analyse_track_asr(cls, track_path, predicted_text, original_text):
@@ -234,13 +255,11 @@ def test_model(model):
         title=f'{model} model'
     )
 
-Evaluator.eval_quality_from_csv(
-    csv_file='refs/asr/recognized.csv',
-    path_col='new_path',
-    save_to='mos_eval/evaluated_mos.csv'
-)
+if __name__ == "__main__":
+    test_model('voidful/wav2vec2-xlsr-multilingual-56')
 
-Evaluator.hist_mos_by_lang(
+""" Evaluator.combined_mos_hist_by_lang(
     'mos_eval/evaluated_mos.csv',
     img_dir='mos_eval/img'
 )
+ """
