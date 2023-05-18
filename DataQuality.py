@@ -256,7 +256,7 @@ def test_model(model):
     )
 
 if __name__ == "__main__":
-    test_model('voidful/wav2vec2-xlsr-multilingual-56')
+    test_model('facebook/wav2vec2-base-960h')
 
 """ Evaluator.combined_mos_hist_by_lang(
     'mos_eval/evaluated_mos.csv',
