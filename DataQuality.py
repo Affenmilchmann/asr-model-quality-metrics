@@ -75,7 +75,7 @@ class Evaluator():
 
         df = nisqa.predict()
 
-        df.reset_index()
+        df.reset_index(drop=True)
         if save_to:
             print(f"saving to {save_to}")
             df.to_csv(save_to, index=False)
@@ -87,7 +87,7 @@ class Evaluator():
         return cls.phonetic.dist(predicted_text, original_text)
 
     @classmethod
-    def load_by_lang(cls, csv_file, lang_col="lang", mos_col="mos_pred", eval_col="phonetic_ev"):
+    def load_by_lang(cls, csv_file, lang_col="lang", mos_col=None, eval_col=None):
         df = pd.read_csv(csv_file)
         langs = np.append(df[lang_col].unique(), 'all_langs')
         by_lang = {}
@@ -97,8 +97,8 @@ class Evaluator():
             else:
                 lang_df = df[df[lang_col] == lang]
             by_lang[lang] = {
-                "mos": lang_df[mos_col].to_numpy(),
-                "eval": lang_df[eval_col].to_numpy()
+                "mos": lang_df[mos_col].to_numpy() if mos_col else None,
+                "eval": lang_df[eval_col].to_numpy() if eval_col else None
             }
         return by_lang
 
@@ -181,7 +181,20 @@ class Evaluator():
             ax.set_xlim((0., 1.1))
             ax.set_ylim((0., 5.))
             ax.figure.savefig(Path(img_dir).joinpath(f'{lang}.png'))
-            ax.clear()     
+            ax.clear()
+
+    @classmethod
+    def hist_mos_by_lang(cls, csv_file, lang_col="lang", mos_col="mos_pred", img_dir="", title="{lang}", bins_count=50):
+        data = cls.load_by_lang(csv_file, lang_col, mos_col)
+        img_dir = Path(img_dir)
+        
+        for lang in data.keys():
+            plt.hist(data[lang]['mos'], bins=bins_count)
+            plt.title(title.format(lang=lang))
+            plt.xlabel("Predicted MOS")
+            plt.ylabel("n")
+            plt.savefig(img_dir.joinpath(f'{lang}_hist.png'))
+            plt.close()
 
     @classmethod
     def analyse_track_asr(cls, track_path, predicted_text, original_text):
@@ -191,33 +204,43 @@ class Evaluator():
     
     #@classmethod
     #def present_analysis(cls, track_paths, texts, predicted_texts, track_analysis???)
-
-evaluated_file = Path('refs/asr/evaluated.csv')
-model_name = 'wav2vec2-large-xlsr-japlmthufielta-ipa-plus-2000'
-
-models_dir = Path('models/')
-model_dir = models_dir.joinpath(model_name)
-if not (model_dir.is_dir()): model_dir.mkdir()
-img_dir = model_dir.joinpath('img')
-if not (img_dir.is_dir()): img_dir.mkdir()
-
-if not model_dir.joinpath('evaluated.csv').is_file():
-    os.rename(evaluated_file, model_dir.joinpath('evaluated.csv'))
-evaluated_file = model_dir.joinpath('evaluated.csv')
-
-Evaluator.hist_by_model(model_name)
-
-Evaluator.eval_quality_from_csv(
-    csv_file=str(evaluated_file),
-    path_col='new_path',
-    save_to=model_dir.joinpath('out.csv')
-)
-pprint(
+"""'wav2vec2-large-xlsr-japlmthufielta-ipa-plus-2000'"""
+def test_model(model):
+    evaluated_file = Path('refs/asr/evaluated.csv')
+    model_author, model_name = model.split('/')
+    #file handling
+    models_dir = Path('models/')
+    model_dir = models_dir.joinpath(model_name)
+    if not (model_dir.is_dir()): model_dir.mkdir()
+    img_dir = model_dir.joinpath('img')
+    if not (img_dir.is_dir()): img_dir.mkdir()
+    # moving evaluated.csv to model's directory
+    if not model_dir.joinpath('evaluated.csv').is_file():
+        os.rename(evaluated_file, model_dir.joinpath('evaluated.csv'))
+    evaluated_file = model_dir.joinpath('evaluated.csv')
+    evaluated_quality_file = model_dir.joinpath('out.csv')
+    # creating PhonED histogram plot
+    Evaluator.hist_by_model(model_name)
+    # predicting MOS using NISQA model
+    Evaluator.eval_quality_from_csv(
+        csv_file=str(evaluated_file),
+        path_col='new_path',
+        save_to=evaluated_quality_file
+    )
+    # creating scatter plot MOS x PhonED for each lang
     Evaluator.plot_by_lang(
         model_dir.joinpath('out.csv'),
         img_dir=img_dir,
-        title=f'ctaguchi/{model_name} model'
+        title=f'{model} model'
     )
+
+Evaluator.eval_quality_from_csv(
+    csv_file='refs/asr/recognized.csv',
+    path_col='new_path',
+    save_to='mos_eval/evaluated_mos.csv'
 )
 
-#pprint(evltr.eval_quality("refs/asr/new_audio/0.wav"))
+Evaluator.hist_mos_by_lang(
+    'mos_eval/evaluated_mos.csv',
+    img_dir='mos_eval/img'
+)
