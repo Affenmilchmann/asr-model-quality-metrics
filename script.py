@@ -1,6 +1,7 @@
 import subprocess
 import os 
 import pandas as pd
+import numpy as np
 from matplotlib import pyplot as plt
 from pathlib import Path
 from tqdm import tqdm
@@ -54,6 +55,13 @@ def get_expected_n_variance(csv, col_name, lang_filter=None, lang_col='lang'):
     data = df[col_name].to_numpy()
 
     return data.mean(), data.std(), len(data)
+
+def replace_empty(csv, col_name, replacement):
+    df = pd.read_csv(csv)
+    df.to_csv(csv.replace('.csv', '_old.csv'))
+    df[col_name] = df[col_name].replace(np.nan, replacement)
+    df.to_csv(csv)
+
 dirs = [
     'refs/asr/audio_to_release/ckt',
     'refs/asr/audio_to_release/evn',
@@ -61,10 +69,15 @@ dirs = [
     'refs/asr/audio_to_release/sah',
     'refs/asr/audio_to_release/yrk'
 ]
-asr_data_csv = 'refs/asr/asr_data.csv'
 
-pprint(get_expected_n_variance(
+replace_empty(
+    'models/wav2vec2-large-xlsr-japlmthufielta-ipa-plus-2000/evaluated.csv',
+    'phonetic_ev',
+    1
+)
+
+""" pprint(get_expected_n_variance(
     'models/wav2vec2-xlsr-multilingual-56/out.csv',
     'mos_pred',
     lang_filter='ckt'
-))
+)) """

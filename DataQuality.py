@@ -193,7 +193,7 @@ class Evaluator():
     #def present_analysis(cls, track_paths, texts, predicted_texts, track_analysis???)
 
 evaluated_file = Path('refs/asr/evaluated.csv')
-model_name = 'wav2vec2-large-TIMIT-IPA'
+model_name = 'wav2vec2-large-xlsr-japlmthufielta-ipa-plus-2000'
 
 models_dir = Path('models/')
 model_dir = models_dir.joinpath(model_name)
@@ -216,7 +216,7 @@ pprint(
     Evaluator.plot_by_lang(
         model_dir.joinpath('out.csv'),
         img_dir=img_dir,
-        title=f'speech31/{model_name} model'
+        title=f'ctaguchi/{model_name} model'
     )
 )
 
