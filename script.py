@@ -7,6 +7,8 @@ from pathlib import Path
 from tqdm import tqdm
 from pprint import pprint
 
+from DataQuality import Evaluator
+
 def get_wav_len(fname):
     result = subprocess.run(
         [
@@ -62,6 +64,55 @@ def replace_empty(csv, col_name, replacement):
     df[col_name] = df[col_name].replace(np.nan, replacement)
     df.to_csv(csv)
 
+def combined_mos_phoned_scatter(csv_file, lang_col="lang", mos_col="mos_pred", eval_col="phonetic_ev", img_dir="", title=None):
+    color_wheel = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
+    data_by_lang = Evaluator.load_by_lang(
+        csv_file=csv_file,
+        lang_col=lang_col,
+        mos_col=mos_col,
+        eval_col=eval_col
+    )
+    del data_by_lang['all_langs']
+    stat_by_lang = Evaluator.statistic_by_lang(
+        csv_file=csv_file,
+        lang_col=lang_col,
+        mos_col=mos_col,
+        eval_col=eval_col
+    )
+    fig, axes = plt.subplots(2, 2, dpi=200, figsize=(10, 8))
+    axes[0, 0].set_title('total')
+    axes[0, 0].set_xlim((0., 1.05))
+    axes[0, 0].set_ylim((0., 5.))
+    for i, lang in enumerate(data_by_lang.keys()):
+        axes[0, 0].scatter(data_by_lang[lang]["eval"], data_by_lang[lang]["mos"], s=1, c=color_wheel[i])
+    text = 'n: {}\ncorrelation: {}\np-value: {:e}'.format(
+        round(stat_by_lang['all_langs'][2], 3),
+        round(stat_by_lang['all_langs'][0], 3),
+        stat_by_lang['all_langs'][1]
+    )
+    axes[0, 0].text(0.05, 0.3, text, bbox={"facecolor":"orange", "alpha":0.2, "pad":5})
+
+    del stat_by_lang['all_langs']
+
+    for i, lang in enumerate(data_by_lang.keys()):
+        print(((i + 1) // 2, (i + 1) % 2))
+        axes[(i + 1) // 2, (i + 1) % 2].scatter(data_by_lang[lang]["eval"], data_by_lang[lang]["mos"], s=1, c=color_wheel[i])
+        axes[(i + 1) // 2, (i + 1) % 2].set_title(lang)
+        text = 'n: {}\ncorrelation: {}\np-value: {:e}'.format(
+            round(stat_by_lang[lang][2], 3),
+            round(stat_by_lang[lang][0], 3),
+            stat_by_lang[lang][1]
+        )
+        axes[(i + 1) // 2, (i + 1) % 2].text(0.05, 0.3, text, bbox={"facecolor":"orange", "alpha":0.2, "pad":5})
+        axes[(i + 1) // 2, (i + 1) % 2].set_xlim((0., 1.05))
+        axes[(i + 1) // 2, (i + 1) % 2].set_ylim((0., 5.))
+    plt.tight_layout()
+    fig.suptitle(title, fontweight='bold', fontsize=13)
+    fig.supxlabel('Phonetic Edit Distance')
+    fig.supylabel('Predicted MOS')
+    plt.subplots_adjust(bottom=0.07, top=0.93, left=0.06)
+    plt.savefig(f"{img_dir}/combined.png")
+
 dirs = [
     'refs/asr/audio_to_release/ckt',
     'refs/asr/audio_to_release/evn',
@@ -70,14 +121,8 @@ dirs = [
     'refs/asr/audio_to_release/yrk'
 ]
 
-replace_empty(
-    'models/wav2vec2-large-xlsr-japlmthufielta-ipa-plus-2000/evaluated.csv',
-    'phonetic_ev',
-    1
+combined_mos_phoned_scatter(
+    'models/wav2vec2-base/out.csv',
+    img_dir='models/wav2vec2-base/img',
+    title='wav2vec2-base'
 )
-
-""" pprint(get_expected_n_variance(
-    'models/wav2vec2-xlsr-multilingual-56/out.csv',
-    'mos_pred',
-    lang_filter='ckt'
-)) """

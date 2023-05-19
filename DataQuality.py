@@ -256,7 +256,15 @@ def test_model(model):
     )
 
 if __name__ == "__main__":
-    test_model('facebook/wav2vec2-base-960h')
+    #test_model('speech31/wav2vec2-large-TIMIT-IPA')
+    models_dir = Path('models/')
+    model_dir = models_dir.joinpath('wav2vec2-base')
+    img_dir = model_dir.joinpath('img')
+    Evaluator.plot_by_lang(
+        model_dir.joinpath('out.csv'),
+        img_dir=img_dir,
+        title='wav2vec2-base'
+    )
 
 """ Evaluator.combined_mos_hist_by_lang(
     'mos_eval/evaluated_mos.csv',
