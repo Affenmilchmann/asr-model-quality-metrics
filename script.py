@@ -58,6 +58,15 @@ def get_expected_n_variance(csv, col_name, lang_filter=None, lang_col='lang'):
 
     return data.mean(), data.std(), len(data)
 
+def get_sigma_ratio(csv, col_name, sigma_count = 1):
+    avg, sigma, _ = get_expected_n_variance(csv, col_name)
+    df = pd.read_csv(csv)
+    data = df[col_name].to_numpy()
+    left = avg - sigma * sigma_count
+    right = avg + sigma * sigma_count
+    in_count = sum([ 1 if left < x < right else 0 for x in data])
+    return in_count / len(data), (left, right)
+
 def replace_empty(csv, col_name, replacement):
     df = pd.read_csv(csv)
     df.to_csv(csv.replace('.csv', '_old.csv'))
@@ -121,8 +130,19 @@ dirs = [
     'refs/asr/audio_to_release/yrk'
 ]
 
-combined_mos_phoned_scatter(
+pprint(get_sigma_ratio(
+    'models/wav2vec2-base-960h/out.csv',
+    'mos_pred',
+    sigma_count=2
+))
+
+""" pprint(get_expected_n_variance(
+    'models/wav2vec2-base-960h/out.csv',
+    'mos_pred'
+)) """
+
+""" combined_mos_phoned_scatter(
     'models/wav2vec2-base/out.csv',
     img_dir='models/wav2vec2-base/img',
     title='wav2vec2-base'
-)
+) """

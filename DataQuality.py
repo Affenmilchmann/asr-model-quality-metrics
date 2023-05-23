@@ -84,10 +84,42 @@ class Evaluator():
     
     @classmethod
     def eval_asr(cls, predicted_text, original_text):
+        """Evaluate Phonetic Edit Distance metric for two texts.
+
+        Args:
+            predicted_text (str): text predicted by a model
+            original_text (str): reference text
+
+        Returns:
+            float: [0, 1]
+        """
         return cls.phonetic.dist(predicted_text, original_text)
 
     @classmethod
-    def load_by_lang(cls, csv_file, lang_col="lang", mos_col=None, eval_col=None):
+    def __load_by_lang(cls, csv_file, lang_col="lang", mos_col=None, eval_col=None):
+        """Loads data from csv and groups it by lang.
+
+        Args:
+            csv_file (str): path to csv file.
+
+            lang_col (str, optional): Name of the csv column that contains lang. Defaults to "lang".
+
+            mos_col (str, optional): Name of the csv column that contains MOS data. If None, MOS will not be returned. Defaults to None.
+
+            eval_col (str, optional): Name of the csv column that contains PhonED data. If None, PhonED will not be returned. Defaults to None.
+
+        Returns:
+            dict[str][str] : ndarray
+
+            First key stands for language, second stands for "mos" or "eval".
+
+            Example: {
+                "ckt": {
+                    "mos": ndarray[1, 2, ..., 3],
+                    "eval": ndarray[0.1, 0.2, ..., 0.3]
+                }
+            }
+        """
         df = pd.read_csv(csv_file)
         langs = np.append(df[lang_col].unique(), 'all_langs')
         by_lang = {}
@@ -104,7 +136,21 @@ class Evaluator():
 
     @classmethod
     def statistic_by_lang(cls, csv_file, lang_col="lang", mos_col="mos_pred", eval_col="phonetic_ev"):
-        data_by_lang = cls.load_by_lang(
+        """Get correlation and p-value of MOS and PhonED distribution
+
+        Args:
+            csv_file (str): path to csv file.
+
+            lang_col (str, optional): Name of the csv column that contains lang. Defaults to "lang".
+
+            mos_col (str, optional): Name of the csv column that contains MOS data. If None, MOS will not be returned. Defaults to None.
+
+            eval_col (str, optional): Name of the csv column that contains PhonED data. If None, PhonED will not be returned. Defaults to None.
+
+        Returns:
+            tuple[float, float, int]: correlation, p-value, number of samples
+        """
+        data_by_lang = cls.__load_by_lang(
             csv_file=csv_file,
             lang_col=lang_col,
             mos_col=mos_col,
@@ -117,7 +163,14 @@ class Evaluator():
         return stat_by_lang
 
     @classmethod
-    def hist_by_model(cls, model_name):
+    def hist_phoned_by_model(cls, model_name):
+        """Plot a histogram of PhonED. Takes evaluated.csv from model's folder.
+        It must be precomputed with eval_quality_from_csv and eval_phoned_from_csv.
+        Saves histogram as png to /models/<model_name>/img/hist.png
+
+        Args:
+            model_name (str): name of the model. Name of the model's folder in /models/ dir
+        """
         models_path = Path('models/')
         model_dir = models_path.joinpath(model_name)
         evaluated_csv = model_dir.joinpath('evaluated.csv')
@@ -134,8 +187,24 @@ class Evaluator():
 
     @classmethod
     def plot_by_lang(cls, csv_file, lang_col="lang", mos_col="mos_pred", eval_col="phonetic_ev", img_dir="", title=None):
+        """Plot a scatter plot MOS x PhonED for each lang. Saves plot to <img_dir>/<lang>.png 
+        Also creates an additional scatter with all languages combined and colorcoded. all_langs.png
+
+        Args:
+            csv_file (str): path to csv file.
+
+            lang_col (str, optional): Name of the csv column that contains lang. Defaults to "lang".
+
+            mos_col (str, optional): Name of the csv column that contains MOS data. If None, MOS will not be returned. Defaults to None.
+
+            eval_col (str, optional): Name of the csv column that contains PhonED data. If None, PhonED will not be returned. Defaults to None.
+            
+            img_dir (str, optional): Image directory. Defaults to "".
+            
+            title (str, optional): title. Defaults to None.
+        """
         color_wheel = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
-        data_by_lang = cls.load_by_lang(
+        data_by_lang = cls.__load_by_lang(
             csv_file=csv_file,
             lang_col=lang_col,
             mos_col=mos_col,
@@ -188,7 +257,23 @@ class Evaluator():
 
     @classmethod
     def hist_mos_by_lang(cls, csv_file, lang_col="lang", mos_col="mos_pred", img_dir="", title="{lang}", bins_count=50):
-        data = cls.load_by_lang(csv_file, lang_col, mos_col)
+        """Create a histogram of MOS distribution for each language.
+
+        Args:
+            csv_file (str): path to csv file.
+
+            lang_col (str, optional): Name of the csv column that contains lang. Defaults to "lang".
+
+            mos_col (str, optional): Name of the csv column that contains MOS data. If None, MOS will not be returned. Defaults to None.
+
+            img_dir (str, optional): Image directory. Defaults to "".
+
+            title (str, optional): Title. You must specify {lang} in the title so the language can be formatted into it. 
+            Defaults to "{lang}".
+
+            bins_count (int, optional): Amount of histogram bins. Defaults to 50.
+        """
+        data = cls.__load_by_lang(csv_file, lang_col, mos_col)
         img_dir = Path(img_dir)
         
         for lang in data.keys():
@@ -201,53 +286,48 @@ class Evaluator():
             plt.close()
 
     @classmethod
-    def combined_mos_hist_by_lang(cls, csv_file, lang_col="lang", mos_col="mos_pred", img_dir="", title="{lang}", bins_count=50):
-        data = cls.load_by_lang(csv_file, lang_col, mos_col)
-        img_dir = Path(img_dir)
-        
-        # assuming we have 3 languages and 1 'all_langs' so 4 in total
-        fig, axes = plt.subplots(2, 2)
-
-        for i, lang in enumerate(data.keys()):
-            axes[i % 2, i // 2].hist(data[lang]['mos'], bins=bins_count)
-            axes[i % 2, i // 2].set_title(title.format(lang=lang))
-            axes[i % 2, i // 2].set_xlim((0, 5))
-        fig.suptitle("MOS distribution by lang")
-        plt.tight_layout()
-
-        plt.savefig(img_dir.joinpath(f'combined_hist.png'))
-
-    @classmethod
     def analyse_track_asr(cls, track_path, predicted_text, original_text):
+        """Analyze single wav file. Get it's MOS and PhonED.
+
+        Args:
+            track_path (str): Path to the wav file
+            predicted_text (str): Text predicted by a model
+            original_text (str): Reference text
+
+        Returns:
+            tuple[float, float]: MOS, PhonED
+        """
         quality_metric = cls.eval_quality_single_wav(track_path)
         asr_metric = cls.eval_asr(predicted_text, original_text)
         return quality_metric, asr_metric
     
-    #@classmethod
-    #def present_analysis(cls, track_paths, texts, predicted_texts, track_analysis???)
-"""'wav2vec2-large-xlsr-japlmthufielta-ipa-plus-2000'"""
 def test_model(model):
     evaluated_file = Path('refs/asr/evaluated.csv')
     model_author, model_name = model.split('/')
+
     #file handling
     models_dir = Path('models/')
     model_dir = models_dir.joinpath(model_name)
     if not (model_dir.is_dir()): model_dir.mkdir()
     img_dir = model_dir.joinpath('img')
     if not (img_dir.is_dir()): img_dir.mkdir()
+
     # moving evaluated.csv to model's directory
     if not model_dir.joinpath('evaluated.csv').is_file():
         os.rename(evaluated_file, model_dir.joinpath('evaluated.csv'))
     evaluated_file = model_dir.joinpath('evaluated.csv')
     evaluated_quality_file = model_dir.joinpath('out.csv')
+
     # creating PhonED histogram plot
-    Evaluator.hist_by_model(model_name)
+    Evaluator.hist_phoned_by_model(model_name)
+
     # predicting MOS using NISQA model
     Evaluator.eval_quality_from_csv(
         csv_file=str(evaluated_file),
         path_col='new_path',
         save_to=evaluated_quality_file
     )
+    
     # creating scatter plot MOS x PhonED for each lang
     Evaluator.plot_by_lang(
         model_dir.joinpath('out.csv'),
@@ -256,18 +336,4 @@ def test_model(model):
     )
 
 if __name__ == "__main__":
-    #test_model('speech31/wav2vec2-large-TIMIT-IPA')
-    models_dir = Path('models/')
-    model_dir = models_dir.joinpath('wav2vec2-base')
-    img_dir = model_dir.joinpath('img')
-    Evaluator.plot_by_lang(
-        model_dir.joinpath('out.csv'),
-        img_dir=img_dir,
-        title='wav2vec2-base'
-    )
-
-""" Evaluator.combined_mos_hist_by_lang(
-    'mos_eval/evaluated_mos.csv',
-    img_dir='mos_eval/img'
-)
- """
+    test_model('speech31/wav2vec2-large-TIMIT-IPA')
